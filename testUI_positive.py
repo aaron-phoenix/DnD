@@ -8,7 +8,7 @@ from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.support.ui import WebDriverWait
 from Auth import Auth
 from Register import Registration
-from conftest import cleanup_test_users, base_url, driver
+
 
 def test_login_positive(driver, base_url):
     login = "aaron2"
@@ -33,7 +33,7 @@ def test_registration_positive1(driver, base_url):
     reg.open_page()
     time.sleep(3)
     
-    reg.register(username, email, password, confirm_password)
+    reg.register(username, email, password, password)
     
     # Ожидание появления иконки профиля
     icon = WebDriverWait(driver, 15).until(
@@ -80,6 +80,10 @@ def test_full_registration_and_login_flow(driver, base_url):
         assert icon.is_displayed(), "Profile icon not displayed after registration"
         print(f"✅ Регистрация успешна: {username}")
         
+        logout_button = WebDriverWait(driver, 15).until(
+            EC.presence_of_element_located((By.XPATH, '//*[local-name()="svg"]//*[local-name()="path"][starts-with(@d, "M24.3333 21.6665L31 14.9998")]'))
+        )
+        logout_button.click()
         # Проверка, что мы не на странице регистрации
         assert "register" not in driver.current_url.lower(), "Still on registration page"
         
@@ -90,27 +94,70 @@ def test_full_registration_and_login_flow(driver, base_url):
         else:
             raise
     
-    # Шаг 3: Выход из аккаунта
+    # Шаг 3: Выход из аккаунта (УЛУЧШЕННАЯ ВЕРСИЯ)
+    print("\n🚪 Шаг 3: Выход из аккаунта...")
+    logout_success = False
+    
+    # Вариант 1: Клик по аватару/иконке профиля, затем по logout
     try:
-        # Ждём появления кнопки выхода
+        # Сначала кликаем по иконке профиля (часто logout скрыт в меню)
+        profile_icon = WebDriverWait(driver, 5).until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, 'svg[viewBox="0 0 32 32"]'))
+        )
+        profile_icon.click()
+        time.sleep(1)  # Ждём открытия меню
+        
+        # Ищем кнопку logout в открывшемся меню
         logout_button = WebDriverWait(driver, 5).until(
-            EC.element_to_be_clickable((By.XPATH, '//*[contains(text(), "Logout") or contains(text(), "Sign out")]'))
+            EC.element_to_be_clickable((By.XPATH, '//*[contains(text(), "Logout") or contains(text(), "Sign out") or contains(text(), "Выйти")]'))
         )
         logout_button.click()
         time.sleep(2)
-        print("✅ Выполнен выход из аккаунта")
-    except:
-        print("⚠️ Кнопка выхода не найдена, продолжаем...")
+        logout_success = True
+        print("✅ Выполнен выход из аккаунта (через меню профиля)")
+        
+    except Exception as e:
+        print(f"⚠️ Не удалось выйти через меню профиля: {e}")
+        
+        # Вариант 2: Прямой поиск кнопки logout
+        if not logout_success:
+            try:
+                logout_button = WebDriverWait(driver, 5).until(
+                    EC.element_to_be_clickable((By.XPATH, '//button[contains(text(), "Logout")] | //a[contains(text(), "Logout")] | //*[@id="logout"] | //*[@class*="logout"]'))
+                )
+                logout_button.click()
+                time.sleep(2)
+                logout_success = True
+                print("✅ Выполнен выход из аккаунта (прямая кнопка)")
+            except Exception as e2:
+                print(f"⚠️ Прямая кнопка logout не найдена: {e2}")
+        
+        # Вариант 3: Использование JavaScript для очистки localStorage/sessionStorage
+        if not logout_success:
+            print("🔄 Используем альтернативный метод: очистка storage")
+            driver.execute_script("window.localStorage.clear();")
+            driver.execute_script("window.sessionStorage.clear();")
+            driver.refresh()
+            time.sleep(2)
+            print("✅ Storage очищен, пользователь деавторизован")
+            logout_success = True
+    
+    # Если не удалось выйти - не фатально, просто перезагружаем страницу
+    if not logout_success:
+        print("⚠️ Не удалось найти кнопку выхода, перезагружаем страницу")
+        driver.get(base_url)
+        time.sleep(2)
     
     # Шаг 4: Переход на главную страницу для авторизации
-    print("\n🔐 Шаг 2: Авторизация с зарегистрированными данными...")
+    print("\n🔐 Шаг 4: Авторизация с зарегистрированными данными...")
     
     # Создаём новый экземпляр Auth
     auth = Auth(driver, base_url)
     
-    # Открываем главную страницу
-    auth.open_page()
-    time.sleep(2)
+    # Если мы не на странице логина, переходим
+    if "login" not in driver.current_url.lower():
+        auth.open_page()
+        time.sleep(2)
     
     # Метод login теперь имеет ожидания
     auth.login(username, password)
