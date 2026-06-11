@@ -6,20 +6,35 @@ from selenium.common.exceptions import TimeoutException
 from Auth import Auth
 
 
-# Массивs невалидных данных
+# Массив невалидных данных
 invalid_credentials_front = [
     ("123", "Vanushka08", "User with this username does not exist"),  # несуществующий пользователь
     ("aaron", "Wrong1234", "Invalid password"),  # неверный пароль
     ("aaron", "wrong", "Password must be at least 8 characters, include uppercase, lowercase and a number"), #неверный пароль менее 8 символов
     ("admin", "12345678", "Password must be at least 8 characters, include uppercase, lowercase and a number"),  # пароль из одних цифр валидной длины
     ("user", "pass", "Password must be at least 8 characters, include uppercase, lowercase and a number")  # общие неверные данные
-    
 ]
 
 invalid_credentials_back = [
     ("", "Vanushka08", "Login is required"),  # пустой логин
     ("test@user", "Pass1234", "Invalid email format"),  # invalid email как логин
-    ("verylongusernamethatshouldnotexist", "Password1", "Login must be no more than 30 characters")  # длинный логин
+    ("verylongusernamethatshouldnotexist", "Password1", "Login must be no more than 30 characters"),  # длинный логин
+    ("пролтримпрольтимсвак", "Password1", "Login can contain only Latin letters, numbers, dots, hyphens and underscores"),   #логин на кириллице
+    ("///dfghjkjhgfdfghjkj", "Password1", "Login can contain only Latin letters, numbers, dots, hyphens and underscores"),   #запрещенные символы
+    ("'\\\'dfghjkjhgfdfghjkj", "Password1", "Login can contain only Latin letters, numbers, dots, hyphens and underscores"),   #запрещенные символы
+    ("fghh()jdghfdg()", "Password1", "Login can contain only Latin letters, numbers, dots, hyphens and underscores"),
+    ("<><><><><><>ghjnghjn", "Password1", "Login can contain only Latin letters, numbers, dots, hyphens and underscores"),
+    (".....fghhdfgh.......", "Password1", "Login format is invalid"),
+    ("df--ghjkjhgf--ghjkj", "Password1", "Login format is invalid"),
+    ("dfgh___jkjhgfdfghjkj", "Password1", "Login format is invalid"),
+    ("...fgfghhnbvc", "Password1", "Login format is invalid"),
+    ("---fgfghhnbvc", "Password1", "Login format is invalid"),
+    ("___fghfghnbvc", "Password1", "Login format is invalid"),
+    ("fghnb...", "Password1", "Login format is invalid"),
+    ("fghnb---", "Password1", "Login format is invalid"),
+    ("fghnb___", "Password1", "Login format is invalid"),
+    ("dfghj😀😀😀dfghjdcvbn", "Password1", "Login can contain only Latin letters, numbers, dots, hyphens and underscores"),   #смайлы
+    ("dfghj男男男dfghjdcvbn", "Password1", "Login can contain only Latin letters, numbers, dots, hyphens and underscores")      #иероглифы
 ]
 
 invalid_credentials_empty = [
